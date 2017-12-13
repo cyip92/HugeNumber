@@ -1,4 +1,4 @@
-package hugeNumbers;
+package matterDimensions;
 public class HugeNumber
 {
 	///// Fields /////
@@ -97,30 +97,25 @@ public class HugeNumber
 		switch (this.recurMode)
 		{
 		case 0:	// Recursive floating point
-
-			if (this.getDepth() != N.getDepth() && this.getDepth() > 2)	// One is vastly larger than the other (10^10^5 >> 10^5)
+			if (Math.abs(this.getDepth() - N.getDepth()) > 1 && this.getDepth() > 2)	// One is vastly larger than the other
 				sum = max(this, N);
 
-			else if (this.getDepth() > 3)	// Don't bother unless the exponent stacks are short
+			else if (this.getDepth() > 4)	// Don't bother unless the exponent stacks are short
 				sum = max(this, N);
 
-			else if (this.getDepth() > 1)	// Exponents are close enough that it might matter
-			{
+			else if (this.getDepth() > 1 || N.getDepth() > 1)	// Exponents are close enough that it might matter
+			{				
 				// Ensure they are both in scientific notation
-				HugeNumber sciN1, sciN2;
-				if (this.getDepth() == 2)
-					sciN1 = this.collapseTopLevel();
-				else
-					sciN1 = this;
-				if (N.getDepth() == 2)
-					sciN2 = N.collapseTopLevel();
-				else
-					sciN2 = N;
-
+				HugeNumber sciN1 = this, sciN2 = N;
+				while (sciN1.getDepth() >= 2)
+					sciN1 = sciN1.collapseTopLevel();
+				while (sciN2.getDepth() >= 2)
+					sciN2 = sciN2.collapseTopLevel();
+				
 				// Doesn't do anything if they're too far (double is 15 digits of precision)
 				if (Math.abs(Math.rint(sciN1.exp.num - sciN2.exp.num)) > 16)
 					return max(this, N);
-
+				
 				// Move the decimal point and add
 				double n1 = sciN1.num, n2 = sciN2.num;
 				int exp1 = (int) Math.rint(sciN1.exp.num), exp2 = (int) Math.rint(sciN2.exp.num);
@@ -273,7 +268,7 @@ public class HugeNumber
 			switch (N2.recurMode)
 			{
 			case 0:	// 2nd operand: Recursive float
-				result = pow10(log10(N1).multiply(N2));
+				result = (N1.log10().multiply(N2)).pow10();
 				break;
 			case 1:	// 2nd operand: Compressed exponents
 				result = new HugeNumber(N2);
@@ -309,18 +304,18 @@ public class HugeNumber
 		return result;
 	}
 
-	public static HugeNumber pow10(HugeNumber N)
+	public HugeNumber pow10()
 	{
-		HugeNumber collapsed = N.collapseTopLevel().collapseTopLevel();
+		HugeNumber collapsed = this.collapseTopLevel().collapseTopLevel();
 		if (collapsed.num < 100 && collapsed.exp == null)	// Assume decimals only really matter with small numbers
 			return new HugeNumber(Math.pow(10, collapsed.num));
 		else	// Take care of the fractional part of the exponent
-			return new HugeNumber(Math.pow(10, collapsed.num - (int) collapsed.num), N);
+			return new HugeNumber(Math.pow(10, collapsed.num - (int) collapsed.num), this);
 	}
 
-	public static HugeNumber log10(HugeNumber N)
+	public HugeNumber log10()
 	{
-		return N.exp.add(new HugeNumber(Math.log10(N.num)));
+		return this.exp.add(new HugeNumber(Math.log10(this.num)));
 	}
 
 	// Calculates the factorial using Stirling's approximation, N! ~ (N^N)(e^-N)sqrt(2*pi*N)
