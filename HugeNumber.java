@@ -1,4 +1,3 @@
-package matterDimensions;
 public class HugeNumber
 {
 	///// Fields /////
