@@ -80,10 +80,10 @@ public class HugeNumber
 	///// Methods /////
 	public HugeNumber add(HugeNumber N)
 	{
-		// Apparently this can happen...
-		if (isZero(this))
+		// Things can break if this isn't checked first
+		if (this.isZero())
 			return N;
-		if (isZero(N))
+		if (N.isZero())
 			return this;
 
 		// Makes logic a bit simpler if we assume they have the same recursion properties and N1 > N2
@@ -205,7 +205,7 @@ public class HugeNumber
 	public HugeNumber multiply(HugeNumber N)
 	{
 		// Zero?
-		if (isZero(this) || isZero(N))
+		if (this.isZero() || N.isZero())
 			return zero;
 
 		// Logic becomes simpler if we assume |N1| > |N2|
@@ -259,20 +259,21 @@ public class HugeNumber
 		return recip;
 	}
 	
-	public static HugeNumber pow(HugeNumber N1, HugeNumber N2)
+	// Evaluates this^N
+	public HugeNumber pow(HugeNumber N)
 	{
 		HugeNumber result = new HugeNumber(0);
-		switch (N1.recurMode)
+		switch (this.recurMode)
 		{
 		case 0:	// 1st operand: Recursive float
-			switch (N2.recurMode)
+			switch (N.recurMode)
 			{
 			case 0:	// 2nd operand: Recursive float
-				result = (N1.log10().multiply(N2)).pow10();
+				result = (this.log10().multiply(N)).pow10();
 				break;
 			case 1:	// 2nd operand: Compressed exponents
-				result = new HugeNumber(N2);
-				result.num = N1.num;
+				result = new HugeNumber(N);
+				result.num = this.num;
 				result.recurDepth = result.recurDepth.add(one);
 				break;
 			default:
@@ -281,16 +282,16 @@ public class HugeNumber
 			break;
 
 		case 1:	// 1st operand: Compressed exponents
-			switch (N2.recurMode)
+			switch (N.recurMode)
 			{
 			case 0:	// 2nd operand: Recursive float
-				result = new HugeNumber(N1);
-				result.exp = pow(N1.exp, N2.exp);
+				result = new HugeNumber(this);
+				result.exp = this.pow(N.exp);
 				break;
 			case 1:	// 2nd operand: Compressed exponents
-				result = new HugeNumber(N1);
-				result.recurDepth = max(N1.recurDepth.add(one), N2.recurDepth);
-				result.exp = new HugeNumber(N2.exp);
+				result = new HugeNumber(this);
+				result.recurDepth = max(this.recurDepth.add(one), N.recurDepth);
+				result.exp = new HugeNumber(N.exp);
 				break;
 			default:
 				System.out.println("HugeNumber (2) is too big to exponentiate!");
@@ -304,6 +305,15 @@ public class HugeNumber
 		return result;
 	}
 
+	// Performs tetration to an integer power
+	public HugeNumber tetrate(int N)
+	{
+		HugeNumber result = this;
+		for (int i = 1; i < N; i++)
+			result = this.pow(result);
+		return result;
+	}
+	
 	public HugeNumber pow10()
 	{
 		HugeNumber collapsed = this.collapseTopLevel().collapseTopLevel();
@@ -318,22 +328,23 @@ public class HugeNumber
 		return this.exp.add(new HugeNumber(Math.log10(this.num)));
 	}
 
-	// Calculates the factorial using Stirling's approximation, N! ~ (N^N)(e^-N)sqrt(2*pi*N)
-	public static HugeNumber factorial(HugeNumber N)
+	// Calculates the factorial using Stirling's approximation, N! ~ (N^N)(e^-N)sqrt(2*pi*N) with a correction factor
+	public HugeNumber factorial()
 	{
-		HugeNumber a = pow(N.multiply(new HugeNumber(1 / Math.E)), N);
-		HugeNumber b = pow(N.multiply(new HugeNumber(2 * Math.PI)), new HugeNumber(0.5));
-		return a.multiply(b);
+		HugeNumber a = this.multiply(new HugeNumber(1 / Math.E)).pow(this);
+		HugeNumber b = this.multiply(new HugeNumber(2 * Math.PI)).pow(new HugeNumber(0.5));
+		HugeNumber c = one.add(this.multiply(new HugeNumber(12)).reciprocal());
+		return a.multiply(b).multiply(c);
 	}
 	
-	public static boolean isZero(HugeNumber N)
+	public boolean isZero()
 	{
-		return N.num == 0;
+		return this.num == 0;
 	}
 
-	public static boolean isNegative(HugeNumber N)
+	public boolean isNegative()
 	{
-		return N.num < 0;
+		return this.num < 0;
 	}
 
 	public static HugeNumber max(HugeNumber N1, HugeNumber N2)
@@ -366,17 +377,17 @@ public class HugeNumber
 	public static int compare(HugeNumber N1, HugeNumber N2)
 	{
 		// Zero?
-		if (isZero(N1))
-			return isNegative(N2) ? 1 : (isZero(N2) ? 0 : -1);
-		if (isZero(N2))
-			return isNegative(N1) ? -1 : 1;
+		if (N1.isZero())
+			return N2.isNegative() ? 1 : (N2.isZero() ? 0 : -1);
+		if (N2.isZero())
+			return N1.isNegative() ? -1 : 1;
 
 		// Check signs
-		if (isNegative(N1) && isNegative(N2))
+		if (N1.isNegative() && N2.isNegative())
 			return compare(N2.abs(), N1.abs());
-		else if (isNegative(N1) && !isNegative(N2))
+		else if (N1.isNegative() && !N2.isNegative())
 			return -1;
-		else if (!isNegative(N1) && isNegative(N2))
+		else if (!N1.isNegative() && N2.isNegative())
 			return 1;
 
 		// Recursion beats everything else
@@ -453,7 +464,7 @@ public class HugeNumber
 	// Adjusts a HugeNumber if it gets too big (or small?)
 	public void standardize()
 	{
-		if (isZero(this))
+		if (this.isZero())
 			return;
 
 		switch (recurMode)
@@ -610,7 +621,7 @@ public class HugeNumber
 		switch (recurMode)
 		{
 		case 0:	// Recursive floating point
-			if (num > 10 || exp == null || isZero(exp))
+			if (num > 10 || exp == null || exp.isZero())
 				return "" + (int) Math.rint(num);
 			else if (exp.num > sciThreshold - 0.5 && exp.exp == null)
 				return str + "e" + exp.toStringNonstandard();
