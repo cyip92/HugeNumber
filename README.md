@@ -1,7 +1,7 @@
 # What
-Java library capable of representing unreasonably large numbers via a recursive floating point-style representation and a bit of cleverness with discarding numbers that don't matter any more.  Probably capable of going up to 10 ↑↑ 100000000 or so (Knuth up-arrow notation).  This necessarily results in a loss of precision for extremely large numbers, use at your own risk!
+Java library capable of representing unreasonably large numbers via a recursive floating point-style representation and a bit of cleverness with discarding numbers that don't matter any more.  Probably capable of going up to 10 ↑↑↑ 3 or so (Knuth up-arrow notation).  This necessarily results in a loss of precision for extremely large numbers, use at your own risk!
 
-Currently only guaranteed to work well with large positive numbers and is in general very much a work in progress.  Anything above 10 ↑↑ 1000000 remains untested for now as there isn't a good way right now to make any numbers much bigger.
+Currently only guaranteed to work well with large positive numbers and is in general very much a work in progress.  Anything above 10 ↑↑ 1000000 remains untested.
 
 # How
 
